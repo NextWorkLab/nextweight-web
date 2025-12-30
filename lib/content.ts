@@ -1,5 +1,3 @@
-// /lib/content.ts
-
 export const HMB_GUIDE_CONTENT = {
   title: "NextWeight Lab: 왜 5mg 유지기에서 HMB가 필수적인가요?",
   sections: [
@@ -11,12 +9,12 @@ export const HMB_GUIDE_CONTENT = {
     {
       id: "protein-synthesis",
       subtitle: "2. 단백질 분해 억제 및 합성 촉진",
-      description: "**HMB($\beta$-Hydroxy $\beta$-Methylbutyrate)**는 단백질 대사의 최종 산물로, 급격한 체중 감량 시 발생하는 근단백질 분해를 직접적으로 차단합니다. 5mg 유지기에 HMB를 병용하면 약물의 감량 효과는 유지하면서도, 소중한 근육 자산을 지켜 '요요 없는 몸'을 만듭니다."
+      description: "HMB(베타-하이드록시 베타-메틸부티레이트)는 단백질 대사의 최종 산물로, 급격한 체중 감량 시 발생하는 근단백질 분해를 직접적으로 차단합니다. 5mg 유지기에 HMB를 병용하면 약물의 감량 효과는 유지하면서도 소중한 근육 자산을 지킵니다."
     },
     {
       id: "sarcopenia-prevention",
-      subtitle: "3. 고령자 및 근감소증 예방 (Sarcopenia Protection)",
-      description: "특히 60대 이상 사용자나 기저 근육량이 적은 분들에게 5mg 하향 조절과 HMB 스택은 단순한 선택이 아닌 필수적인 방어 전략입니다. 이는 급격한 체중 변화 속에서도 신체 기능을 보존하는 최적의 시너지를 냅니다."
+      subtitle: "3. 고령자 및 근감소증 예방",
+      description: "특히 60대 이상 사용자나 기저 근육량이 적은 분들에게 5mg 하향 조절과 HMB 스택은 필수적인 방어 전략입니다. 이는 급격한 체중 변화 속에서도 신체 기능을 보존하는 최적의 시너지를 냅니다."
     }
   ]
 };
