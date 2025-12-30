@@ -1,20 +1,23 @@
 "use client";
 
-import { useState, useRef } from 'react'; // useRef 추가
+import { useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { generatePersonalizedRoadmap } from '@/lib/roadmap-engine';
 import { HMB_GUIDE_CONTENT } from '@/lib/content';
 import RoadmapChart from '@/components/RoadmapChart';
 import DisclaimerModal from '@/components/DisclaimerModal';
-import html2canvas from 'html2canvas'; // 추가
-import jsPDF from 'jspdf'; // 추가
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
-export default function ResultsPage() {
+// 실제 로직을 담은 내부 컴포넌트
+function ResultsContent() {
   const searchParams = useSearchParams();
   const [isAgreed, setIsAgreed] = useState(false);
-  const reportRef = useRef<HTMLDivElement>(null); // 리포트 영역 참조를 위한 ref
+  const reportRef = useRef<HTMLDivElement>(null);
   
+  // URL 파라미터로부터 사용자 데이터 추출
   const userData = {
+    // 터제타파이드 및 세마글루타이드 구분
     drugType: (searchParams.get('drugType') as 'SEMAGLUTIDE' | 'TIRZEPATIDE') || 'TIRZEPATIDE',
     currentDose: parseFloat(searchParams.get('currentDose') || '2.5'),
     age: parseInt(searchParams.get('age') || '30'),
@@ -24,21 +27,20 @@ export default function ResultsPage() {
 
   const result = generatePersonalizedRoadmap(userData);
 
-  // PDF 생성 함수
+  // PDF 생성 및 다운로드 함수
   const handleDownloadPDF = async () => {
     if (!reportRef.current) return;
 
     try {
       const canvas = await html2canvas(reportRef.current, {
-        scale: 2, // 해상도 향상
+        scale: 2, // 고해상도 설정
         useCORS: true,
         logging: false,
       });
       
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // A4 가로 길이 (mm)
-      const pageHeight = 297; // A4 세로 길이 (mm)
+      const imgWidth = 210; // A4 가로 (mm)
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
@@ -53,7 +55,6 @@ export default function ResultsPage() {
     <div className="min-h-screen bg-gray-50 pb-20">
       <DisclaimerModal isOpen={!isAgreed} onConfirm={() => setIsAgreed(true)} />
       
-      {/* 캡처할 영역에 ref 설정 */}
       <div ref={reportRef} className="max-w-5xl mx-auto pt-12 px-6 bg-gray-50">
         <header className="mb-12 text-center">
           <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Personalized Roadmap</h1>
@@ -104,7 +105,6 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            {/* PDF 다운로드 버튼에 함수 연결 */}
             <button 
               onClick={handleDownloadPDF}
               className="w-full py-5 bg-white border-2 border-gray-200 text-gray-900 font-bold rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center"
@@ -115,5 +115,21 @@ export default function ResultsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// 빌드 에러 방지를 위해 Suspense로 감싸서 export
+export default function ResultsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">개인별 리포트를 생성하고 있습니다...</p>
+        </div>
+      </div>
+    }>
+      <ResultsContent />
+    </Suspense>
   );
 }
