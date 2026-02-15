@@ -9,8 +9,10 @@ import type { DashboardPatient } from '@/lib/types';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { clinic_id: string } }
+  { params }: { params: Promise<{ clinic_id: string }> }
 ) {
+  const { clinic_id } = await params;
+ 
   try {
     // 1. 인증 확인
     const authResult = authenticateRequest(request, params.clinic_id);
