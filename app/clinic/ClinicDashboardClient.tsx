@@ -1,7 +1,7 @@
+'use client';
+
 // app/clinic/ClinicDashboardClient.tsx
 // 병원 대시보드 - 환자 목록 및 상태 모니터링
-
-'use client';
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -52,6 +52,8 @@ export default function ClinicDashboardClient() {
       setError(null);
 
       const qs = new URLSearchParams({
+        clinic_id: clinicId!,
+        token: token!,
         weeks: '4',
       });
 
