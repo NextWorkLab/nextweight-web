@@ -15,12 +15,13 @@ export async function GET(
  
   try {
     // 1. 인증 확인
-const authResult = authenticateRequest(request, clinic_id);
+    const authResult = authenticateRequest(request, clinic_id);
     if (!authResult.authenticated) {
       return unauthorizedResponse(authResult.error);
     }
 
-    const clinicId = params.clinic_id;
+    const clinicId = clinic_id;
+
 
     // 2. 파라미터 파싱
     const { searchParams } = new URL(request.url);
