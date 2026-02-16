@@ -30,7 +30,7 @@ export default function ClinicDashboardClient() {
   const [data, setData] = useState<DashboardData | null>(null);
 
   const [colorFilter, setColorFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('active');
+  const [statusFilter, setStatusFilter] = useState<string>('');
 
   const clinicId = searchParams.get('clinic_id');
   const token = searchParams.get('token');
