@@ -27,14 +27,12 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const weeks = parseInt(searchParams.get('weeks') || '4', 10);
 
-  // 3. 환자 정보 조회
-const patient = await findPatientByCode(patient_code);
+    // 3. 환자 정보 조회
+    const patient = await findPatientByCode(patient_code);
 
-if (!patient) {
-  return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
-}
-
-
+    if (!patient) {
+      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+    }
 
     // 4. clinic_id 일치 확인 (보안)
     if (patient.clinic_id !== clinic_id) {
