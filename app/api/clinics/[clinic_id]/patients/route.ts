@@ -1,17 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest, unauthorizedResponse } from "@/lib/auth";
-import { readAll } from "@/lib/sheets";
+import { fetchAll, tables } from "@/lib/airtable";
 
-function toObjects(rows: any[][]) {
-  if (!rows || rows.length < 2) return [];
-  const headers = rows[0].map(h => String(h || "").trim());
-  return rows.slice(1).map(r => {
-    const obj: any = {};
-    headers.forEach((h, i) => {
-      obj[h] = r?.[i];
-    });
-    return obj;
-  });
+function s(v: any) {
+  return String(v ?? "").trim();
+}
+function upper(v: any) {
+  return s(v).toUpperCase();
+}
+
+function normalizeWeeklyDay(v: any) {
+  const x = upper(v);
+  const allowed = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+  return (allowed.includes(x) ? x : "MON") as any;
+}
+
+function normalizeStatus(v: any) {
+  const x = s(v).toLowerCase();
+  if (x === "active" || x === "paused" || x === "discharged") return x as any;
+  if (s(v) === "활성") return "active";
+  if (s(v) === "중단") return "paused";
+  if (s(v) === "종료") return "discharged";
+  return "active";
+}
+
+function toBool(v: any) {
+  if (typeof v === "boolean") return v;
+  const x = s(v).toLowerCase();
+  return x === "true" || x === "yes" || x === "y" || x === "1" || x === "예";
+}
+
+function inClinicByFallback(p: any, clinic_id: string) {
+  const c1 = s(p?.clinic_id);
+  const c2 = s(p?.clinic);
+  if (upper(c1) === upper(clinic_id)) return true;
+  if (upper(c2) === upper(clinic_id)) return true;
+
+  const pc = s(p?.patient_code);
+  if (pc && upper(pc).startsWith(upper(clinic_id) + "-")) return true;
+
+  return false;
 }
 
 export async function GET(
@@ -26,30 +54,34 @@ export async function GET(
       return unauthorizedResponse(authResult.error);
     }
 
-    const rows = await readAll("Patients");
-    const data = toObjects(rows as any[][]);
+    // MVP: 전체 로드 후 clinic 매칭(스키마 혼재 방어)
+    const allPatients = await fetchAll<any>(tables.Patients);
 
-    const patients = data
-      .filter((r: any) => String(r.clinic_id || "").trim() === String(clinic_id).trim())
-      .map((r: any) => ({
-        patient_id: r.patient_id || "",
-        clinic_id: r.clinic_id || "",
-        patient_code: r.patient_code || "",
-        phone: r.phone || "",
-        name_or_initial: r.name_or_initial || "",
-        weekly_day: r.weekly_day || "MON",
-        consent: r.consent === "TRUE" || r.consent === true,
-        status: r.status || "active",
-        created_at: r.created_at || "",
-        updated_at: r.updated_at || "",
-        last_daily_response_at: r.last_daily_response_at || undefined,
-        last_weekly_response_at: r.last_weekly_response_at || undefined,
+    const patients = allPatients
+      .filter((p: any) => inClinicByFallback(p, clinic_id))
+      .map((p: any) => ({
+        // 기존 types.Patient에 맞춤
+        patient_id: s(p.patient_id) || s(p.id),
+        clinic_id: s(p.clinic_id) || clinic_id,
+        patient_code: s(p.patient_code),
+        phone: s(p.phone),
+        name_or_initial: s(p.name_or_initial),
+        weekly_day: normalizeWeeklyDay(p.weekly_day),
+        consent: toBool(p.consent),
+        status: normalizeStatus(p.status ?? p.Status ?? p.Select ?? p["상태"]),
+        created_at: s(p.created_at) || s(p.createdTime) || "",
+        updated_at: s(p.updated_at) || s(p.updatedTime) || "",
+        last_daily_response_at: p.last_daily_response_at || undefined,
+        last_weekly_response_at: p.last_weekly_response_at || undefined,
       }))
       .filter((p: any) => p.patient_code);
 
     return NextResponse.json({ clinic_id, patients });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Patients list API error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error", details: error?.message ?? String(error) },
+      { status: 500 }
+    );
   }
 }
