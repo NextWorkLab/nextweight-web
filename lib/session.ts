@@ -6,15 +6,28 @@ import { createHmac, timingSafeEqual } from "crypto";
 const SESSION_COOKIE = "nw_session";
 const SESSION_DURATION_DAYS = 30;
 
+// 개발 환경에서 환경변수가 없으면 폴백 시크릿을 사용하고 경고만 출력
 function getSecret(): string {
   const s = process.env.SESSION_SECRET;
-  if (!s) throw new Error("Missing SESSION_SECRET env var");
+  if (!s) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[NextWeight] SESSION_SECRET not set — using insecure dev fallback. Set it in .env.local for real sessions.");
+      return "dev-session-secret-not-for-production-00000";
+    }
+    throw new Error("Missing SESSION_SECRET env var");
+  }
   return s;
 }
 
 function getOtpSecret(): string {
   const s = process.env.OTP_SECRET;
-  if (!s) throw new Error("Missing OTP_SECRET env var");
+  if (!s) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[NextWeight] OTP_SECRET not set — using insecure dev fallback. Set it in .env.local for real OTP.");
+      return "dev-otp-secret-not-for-production-000000";
+    }
+    throw new Error("Missing OTP_SECRET env var");
+  }
   return s;
 }
 

@@ -40,7 +40,13 @@ function AuthForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "오류가 발생했습니다.");
-      setInfo("인증번호가 발송되었습니다. 문자 메시지를 확인해 주세요.");
+      // 개발 환경: 서버가 코드를 응답에 포함하면 자동 입력
+      if (data.dev_code) {
+        setOtp(String(data.dev_code));
+        setInfo(`[개발] 인증번호: ${data.dev_code}`);
+      } else {
+        setInfo("인증번호가 발송되었습니다. 문자 메시지를 확인해 주세요.");
+      }
       setStep("otp");
       setTimeout(() => otpRef.current?.focus(), 100);
     } catch (err: unknown) {

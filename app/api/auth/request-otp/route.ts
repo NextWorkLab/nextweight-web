@@ -26,9 +26,15 @@ export async function POST(request: NextRequest) {
       console.log(`[DEV] OTP for ${phone}: ${code}`);
     }
 
-    return NextResponse.json({ ok: true });
+    // MOCK_OTP가 설정된 경우 응답에 코드를 포함해 개발 편의성 제공
+    const mockOtp = process.env.MOCK_OTP;
+    return NextResponse.json({
+      ok: true,
+      ...(mockOtp ? { dev_code: code } : {}),
+    });
   } catch (err) {
     console.error("request-otp error:", err);
-    return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
+    const message = err instanceof Error ? err.message : "서버 오류가 발생했습니다.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

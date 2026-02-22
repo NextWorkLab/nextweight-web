@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const code = String(body.code || "").trim();
 
     if (!phone) {
-      return NextResponse.json({ error: "올바른 휴대폰 번호입니다." }, { status: 400 });
+      return NextResponse.json({ error: "올바른 휴대폰 번호를 입력해 주세요." }, { status: 400 });
     }
     if (!/^\d{6}$/.test(code)) {
       return NextResponse.json({ error: "6자리 인증번호를 입력해 주세요." }, { status: 400 });
