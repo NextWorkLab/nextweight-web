@@ -12,10 +12,12 @@ import {
 } from "./airtable";
 import type {
   PatientUser,
+  MagicLink,
   DailyLog,
   WeeklyLog,
   ShareToken,
   PatientUserFields,
+  MagicLinkFields,
   DailyLogFields,
   WeeklyLogFields,
   ShareTokenFields,
@@ -28,6 +30,7 @@ function t(envKey: string, fallback: string) {
 
 const Tables = {
   Users: () => t("AIRTABLE_TABLE_USERS", "Users"),
+  MagicLinks: () => t("AIRTABLE_TABLE_MAGIC_LINKS", "MagicLinks"),
   DailyLogs: () => t("AIRTABLE_TABLE_DAILY_LOGS", "DailyLogs"),
   WeeklyLogs: () => t("AIRTABLE_TABLE_WEEKLY_LOGS", "WeeklyLogs"),
   ShareTokens: () => t("AIRTABLE_TABLE_SHARE_TOKENS", "ShareTokens"),
@@ -38,10 +41,24 @@ function toUser(r: PatientUserFields & { id: string; createdTime: string }): Pat
   return {
     id: r.id,
     user_id: r.user_id || r.id,
-    phone: r.phone || "",
-    email: r.email,
+    email: r.email || "",
+    phone: r.phone,
     consent: Boolean(r.consent),
     created_at: r.created_at || r.createdTime,
+  };
+}
+
+function toMagicLink(r: MagicLinkFields & { id: string; createdTime: string }): MagicLink {
+  return {
+    id: r.id,
+    token: r.token || "",
+    code_hash: r.code_hash || "",
+    user_id: r.user_id || "",
+    expires_at: r.expires_at || "",
+    created_at: r.created_at || r.createdTime,
+    used_at: r.used_at,
+    revoked_at: r.revoked_at,
+    attempts: Number(r.attempts ?? 0),
   };
 }
 
@@ -79,12 +96,12 @@ function toShareToken(r: ShareTokenFields & { id: string; createdTime: string })
   };
 }
 
-// ── Users ──────────────────────────────────────────────────────
+// ── Users (이메일 기반) ────────────────────────────────────────
 
-export async function findUserByPhone(phone: string): Promise<PatientUser | null> {
+export async function findUserByEmail(email: string): Promise<PatientUser | null> {
   const r = await findFirst<PatientUserFields>(
     Tables.Users(),
-    formulaEq("phone", phone)
+    formulaEq("email", email)
   );
   return r ? toUser(r) : null;
 }
@@ -97,7 +114,37 @@ export async function findUserById(user_id: string): Promise<PatientUser | null>
   return r ? toUser(r) : null;
 }
 
-export async function createUser(phone: string): Promise<PatientUser> {
+export async function createUserByEmail(email: string): Promise<PatientUser> {
+  const user_id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const r = await createRecord<PatientUserFields>(Tables.Users(), {
+    user_id,
+    email,
+    consent: true,
+    created_at: now,
+  });
+  return toUser(r);
+}
+
+export async function upsertUserByEmail(email: string): Promise<PatientUser> {
+  const existing = await findUserByEmail(email);
+  if (existing) return existing;
+  return createUserByEmail(email);
+}
+
+// ── Users (레거시 폰 기반 — 하위 호환) ─────────────────────────
+
+export async function findUserByPhone(phone: string): Promise<PatientUser | null> {
+  const r = await findFirst<PatientUserFields>(
+    Tables.Users(),
+    formulaEq("phone", phone)
+  );
+  return r ? toUser(r) : null;
+}
+
+export async function upsertUser(phone: string): Promise<PatientUser> {
+  const existing = await findUserByPhone(phone);
+  if (existing) return existing;
   const user_id = crypto.randomUUID();
   const now = new Date().toISOString();
   const r = await createRecord<PatientUserFields>(Tables.Users(), {
@@ -109,10 +156,65 @@ export async function createUser(phone: string): Promise<PatientUser> {
   return toUser(r);
 }
 
-export async function upsertUser(phone: string): Promise<PatientUser> {
-  const existing = await findUserByPhone(phone);
-  if (existing) return existing;
-  return createUser(phone);
+// ── MagicLinks ────────────────────────────────────────────────
+
+export async function createMagicLink(data: {
+  token: string;
+  code_hash: string;
+  user_id: string;
+  expires_at: string;
+}): Promise<MagicLink> {
+  const now = new Date().toISOString();
+  const r = await createRecord<MagicLinkFields>(Tables.MagicLinks(), {
+    token: data.token,
+    code_hash: data.code_hash,
+    user_id: data.user_id,
+    expires_at: data.expires_at,
+    created_at: now,
+    attempts: 0,
+  });
+  return toMagicLink(r);
+}
+
+export async function findMagicLinkByToken(token: string): Promise<MagicLink | null> {
+  const r = await findFirst<MagicLinkFields>(
+    Tables.MagicLinks(),
+    formulaEq("token", token)
+  );
+  return r ? toMagicLink(r) : null;
+}
+
+/** 특정 user_id의 최신 미사용·미폐기 매직링크 반환 */
+export async function findLatestMagicLinkByUserId(
+  user_id: string
+): Promise<MagicLink | null> {
+  // user_id로 필터, created_at desc 정렬, 최근 5건만 조회 후 코드에서 조건 확인
+  const records = await fetchAll<MagicLinkFields>(Tables.MagicLinks(), {
+    filterByFormula: formulaAnd(
+      formulaEq("user_id", user_id),
+      `{used_at}=''`,
+      `{revoked_at}=''`
+    ),
+    sort: [{ field: "created_at", direction: "desc" }],
+    maxRecords: 1,
+  });
+  if (!records.length) return null;
+  return toMagicLink(records[0]);
+}
+
+export async function markMagicLinkUsed(id: string): Promise<void> {
+  await updateRecord<MagicLinkFields>(Tables.MagicLinks(), id, {
+    used_at: new Date().toISOString(),
+  });
+}
+
+export async function incrementMagicLinkAttempts(
+  id: string,
+  newAttempts: number
+): Promise<void> {
+  await updateRecord<MagicLinkFields>(Tables.MagicLinks(), id, {
+    attempts: newAttempts,
+  });
 }
 
 // ── DailyLogs ─────────────────────────────────────────────────

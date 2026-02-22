@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "사용자를 찾을 수 없습니다." }, { status: 404 });
     }
-    return NextResponse.json({ user_id: user.user_id, phone: user.phone, consent: user.consent });
+    return NextResponse.json({ user_id: user.user_id, email: user.email, consent: user.consent });
   } catch (err) {
     console.error("me error:", err);
     return NextResponse.json({ error: "서버 오류" }, { status: 500 });
