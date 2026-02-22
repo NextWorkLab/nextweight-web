@@ -1,32 +1,23 @@
 // lib/session.ts
-// 세션 및 OTP 관리 (server-only, Node.js crypto 사용)
+// 세션 쿠키 관리 (server-only, Node.js crypto 사용)
+// 이메일 기반 인증으로 전환 — OTP 관련 코드 제거됨
 
 import { createHmac, timingSafeEqual } from "crypto";
 
 const SESSION_COOKIE = "nw_session";
 const SESSION_DURATION_DAYS = 30;
 
-// 개발 환경에서 환경변수가 없으면 폴백 시크릿을 사용하고 경고만 출력
+// AUTH_SECRET 우선, SESSION_SECRET 하위 호환 폴백
 function getSecret(): string {
-  const s = process.env.SESSION_SECRET;
+  const s = process.env.AUTH_SECRET || process.env.SESSION_SECRET;
   if (!s) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("[NextWeight] SESSION_SECRET not set — using insecure dev fallback. Set it in .env.local for real sessions.");
-      return "dev-session-secret-not-for-production-00000";
+      console.warn(
+        "[NextWeight] AUTH_SECRET not set — using insecure dev fallback. Set it in .env.local."
+      );
+      return "dev-auth-secret-not-for-production-00000000";
     }
-    throw new Error("Missing SESSION_SECRET env var");
-  }
-  return s;
-}
-
-function getOtpSecret(): string {
-  const s = process.env.OTP_SECRET;
-  if (!s) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[NextWeight] OTP_SECRET not set — using insecure dev fallback. Set it in .env.local for real OTP.");
-      return "dev-otp-secret-not-for-production-000000";
-    }
-    throw new Error("Missing OTP_SECRET env var");
+    throw new Error("Missing AUTH_SECRET env var");
   }
   return s;
 }
@@ -35,7 +26,7 @@ function getOtpSecret(): string {
 
 export interface SessionPayload {
   user_id: string;
-  phone: string;
+  email: string;
 }
 
 function b64url(s: string): string {
@@ -73,7 +64,7 @@ export function verifySessionCookie(value: string): SessionPayload | null {
 
     const payload = JSON.parse(fromB64url(data)) as SessionPayload & { exp: number };
     if (payload.exp < Math.floor(Date.now() / 1000)) return null;
-    return { user_id: payload.user_id, phone: payload.phone };
+    return { user_id: payload.user_id, email: payload.email };
   } catch {
     return null;
   }
@@ -95,32 +86,3 @@ export function getSessionFromRequest(request: Request): SessionPayload | null {
 }
 
 export { SESSION_COOKIE };
-
-// ── OTP ───────────────────────────────────────────────────────
-// HMAC-based time-windowed OTP (no server-side storage needed)
-// 창: 5분(300초) 단위 → 현재 + 이전 창 허용
-
-const OTP_WINDOW_SECONDS = 300;
-const OTP_DIGITS = 6;
-
-function otpForWindow(phone: string, window: number): string {
-  const raw = hmacSign(`${phone}:${window}`, getOtpSecret());
-  // raw는 base64url → 숫자만 추출
-  const num = parseInt(raw.replace(/[^0-9]/g, "").slice(0, 10) || "0", 10);
-  return String(num % 10 ** OTP_DIGITS).padStart(OTP_DIGITS, "0");
-}
-
-export function generateOtp(phone: string): string {
-  const window = Math.floor(Date.now() / 1000 / OTP_WINDOW_SECONDS);
-  return otpForWindow(phone, window);
-}
-
-export function verifyOtp(phone: string, code: string): boolean {
-  // Mock mode: 개발 환경에서 MOCK_OTP 환경변수가 설정되어 있으면 해당 코드 허용
-  const mockOtp = process.env.MOCK_OTP;
-  if (mockOtp && code === mockOtp) return true;
-
-  const window = Math.floor(Date.now() / 1000 / OTP_WINDOW_SECONDS);
-  const valid = [window, window - 1].map((w) => otpForWindow(phone, w));
-  return valid.includes(code);
-}

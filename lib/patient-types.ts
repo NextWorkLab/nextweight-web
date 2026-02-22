@@ -4,10 +4,22 @@
 export interface PatientUser {
   id: string;           // Airtable record id
   user_id: string;      // UUID
-  phone: string;
-  email?: string;
+  email: string;        // 기본 식별자 (이메일 인증 전환)
+  phone?: string;       // 레거시 보존 (optional)
   consent: boolean;
   created_at: string;
+}
+
+export interface MagicLink {
+  id: string;           // Airtable record id
+  token: string;        // 64-char hex URL-safe token
+  code_hash: string;    // SHA-256(6-digit code) hex
+  user_id: string;      // UUID
+  expires_at: string;   // ISO 8601
+  created_at: string;   // ISO 8601
+  used_at?: string;     // ISO 8601 (사용 완료 시)
+  revoked_at?: string;  // ISO 8601 (명시적 폐기 시)
+  attempts: number;     // 코드 입력 실패 횟수 (최대 5)
 }
 
 export interface DailyLog {
@@ -45,6 +57,29 @@ export interface SignalResult {
   reasons: string[];
 }
 
+// ── Airtable raw field maps ────────────────────────────────────
+
+export interface PatientUserFields {
+  user_id?: string;
+  email?: string;
+  phone?: string;       // 레거시
+  consent?: boolean;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+export interface MagicLinkFields {
+  token?: string;
+  code_hash?: string;
+  user_id?: string;
+  expires_at?: string;
+  created_at?: string;
+  used_at?: string;
+  revoked_at?: string;
+  attempts?: number;
+  [key: string]: unknown;
+}
+
 export interface DailyLogFields {
   user_id?: string;
   timestamp?: string;
@@ -61,15 +96,6 @@ export interface WeeklyLogFields {
   weight_kg?: number;
   appetite_change?: string;
   exercise_frequency?: string;
-  [key: string]: unknown;
-}
-
-export interface PatientUserFields {
-  user_id?: string;
-  phone?: string;
-  email?: string;
-  consent?: boolean;
-  created_at?: string;
   [key: string]: unknown;
 }
 
