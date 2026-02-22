@@ -192,9 +192,9 @@ export async function GET(
       let signal_color: SignalColor = 'green';
       const signal_reasons: string[] = [];
 
-      if (recent7.length === 0) {
-        signal_color = 'green';
-        signal_reasons.push('최근 7일 데이터 없음');
+ if (recent7.length === 0) {
+  signal_color = 'yellow';
+  signal_reasons.push('최근 7일 데이터 없음');
       } else {
         if (hasVomiting) signal_reasons.push('구토 발생');
         if (maxNausea >= 8) signal_reasons.push('오심 고도');
