@@ -186,3 +186,52 @@ export interface WeeklyResponseFields {
   exercise_frequency?: string;
   [key: string]: any;
 }
+
+// ── 범용 쓰기 헬퍼 ───────────────────────────────────────────────
+
+export async function createRecord<TFields extends Record<string, unknown>>(
+  table: string,
+  fields: TFields
+): Promise<TFields & { id: string; createdTime: string }> {
+  const baseUrl = airtableBaseUrl();
+  const url = `${baseUrl}/${encodeURIComponent(table)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: airtableHeaders(),
+    body: JSON.stringify({ fields }),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Airtable createRecord failed (${res.status}): ${text}`);
+  }
+  const data = (await res.json()) as AirtableRecord<TFields>;
+  return { ...(data.fields as any), id: data.id, createdTime: data.createdTime };
+}
+
+export async function updateRecord<TFields extends Record<string, unknown>>(
+  table: string,
+  recordId: string,
+  fields: Partial<TFields>
+): Promise<void> {
+  const baseUrl = airtableBaseUrl();
+  const url = `${baseUrl}/${encodeURIComponent(table)}/${encodeURIComponent(recordId)}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: airtableHeaders(),
+    body: JSON.stringify({ fields }),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Airtable updateRecord failed (${res.status}): ${text}`);
+  }
+}
+
+export async function findFirst<TFields>(
+  table: string,
+  filterByFormula: string
+): Promise<(TFields & { id: string; createdTime: string }) | null> {
+  const records = await fetchAll<TFields>(table, { filterByFormula, maxRecords: 1 });
+  return records[0] ?? null;
+}

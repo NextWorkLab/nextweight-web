@@ -8,8 +8,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Next Weight Lab | 대사 가교(Metabolic Bridge) 로드맵",
-  description: "비싼 다이어트가 요요로 끝나지 않도록, GPS 전략으로 당신의 대사를 사수하세요.",
+  title: "NextWeight | 환자 자가관리 플랫폼",
+  description: "GLP-1 치료 중 복약, 오심, 체중을 기록하고 진료 시 안전하게 공유하는 환자 자가관리 플랫폼",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
