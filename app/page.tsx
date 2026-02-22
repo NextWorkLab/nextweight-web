@@ -1,102 +1,138 @@
-// /app/page.tsx
-"use client";
+// app/page.tsx
+// 환자 중심 랜딩 페이지
 
-import React from "react";
-import { useRouter } from "next/navigation";
-import OnboardingForm from "@/components/OnboardingForm";
+import Link from "next/link";
+import type { Metadata } from "next";
 
-function toQuery(data: any) {
-  const sp = new URLSearchParams();
+export const metadata: Metadata = {
+  title: "NextWeight | 환자 자가관리 플랫폼",
+  description:
+    "GLP-1 치료 중 일일 건강 상태를 기록하고, 진료 시 의료진과 안전하게 공유하세요.",
+};
 
-  // 기본 정보
-  if (data.userName) sp.set("userName", String(data.userName));
-  if (data.userAge !== undefined && data.userAge !== null) sp.set("userAge", String(data.userAge));
-  if (data.userGender) sp.set("userGender", String(data.userGender));
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* 헤더 */}
+      <header className="border-b border-gray-100">
+        <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+          <h1 className="text-xl font-bold tracking-tight">
+            <span className="text-blue-600">Next</span>
+            <span className="text-slate-900">Weight</span>
+          </h1>
+          <Link
+            href="/auth"
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+          >
+            로그인
+          </Link>
+        </div>
+      </header>
 
-  // 체중 정보
-  if (data.currentWeight !== undefined && data.currentWeight !== null) sp.set("currentWeight", String(data.currentWeight));
-  if (data.targetWeight !== undefined && data.targetWeight !== null) sp.set("targetWeight", String(data.targetWeight));
+      {/* 히어로 */}
+      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-12 pb-10 flex flex-col">
+        <div className="flex-1">
+          <div className="mb-2">
+            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+              GLP-1 자가관리 플랫폼
+            </span>
+          </div>
+          <h2 className="mt-4 text-3xl font-extrabold text-slate-900 leading-tight">
+            기록하고,
+            <br />
+            공유하고,
+            <br />
+            <span className="text-blue-600">관리하세요.</span>
+          </h2>
+          <p className="mt-4 text-slate-500 leading-relaxed">
+            복약, 오심, 체중을 매일 기록하고
+            <br />
+            진료 시 의료진과 안전하게 공유합니다.
+          </p>
 
-  // 투약 정보
-  // 내부 엔진 표준 값으로 변환
-  // - drugStatus: "사용 전"|"사용 중"|"중단" -> "PRE"|"ON"|"OFF"
-  // - drugType: "NONE"도 명시해 두어 results에서 검증 로직(시작 체중 필요 여부)을 정확히 판단할 수 있게 함
-  if (data.drugStatus) {
-    const v = String(data.drugStatus);
-    sp.set("drugStatus", v === "사용 중" ? "ON" : v === "중단" ? "OFF" : v === "사용 전" ? "PRE" : v);
-  }
-  if (data.drugType) sp.set("drugType", String(data.drugType));
+          {/* CTA 버튼 */}
+          <div className="mt-8 space-y-3">
+            <Link
+              href="/auth?next=/app/record"
+              className="flex items-center justify-center w-full bg-blue-600 text-white font-semibold py-3.5 rounded-xl text-base hover:bg-blue-700 transition-colors"
+            >
+              오늘 기록하기
+            </Link>
+            <Link
+              href="/auth?next=/app/report"
+              className="flex items-center justify-center w-full bg-white border border-gray-300 text-slate-700 font-semibold py-3.5 rounded-xl text-base hover:bg-gray-50 transition-colors"
+            >
+              진료용 리포트 보기
+            </Link>
+            <Link
+              href="/auth"
+              className="flex items-center justify-center w-full text-slate-500 text-sm py-2 hover:text-slate-700 transition-colors"
+            >
+              시작하기 / 로그인 →
+            </Link>
+          </div>
 
-  // 이 키가 results/page.tsx에서 사용됩니다
-  if (data.startWeightBeforeDrug !== undefined && data.startWeightBeforeDrug !== null) {
-    sp.set("startWeightBeforeDrug", String(data.startWeightBeforeDrug));
-  }
+          {/* 기능 소개 */}
+          <div className="mt-12 space-y-4">
+            <FeatureRow
+              icon="●"
+              title="매일 60초 기록"
+              desc="복약, 오심, 구토, 체중을 간단하게 기록합니다."
+            />
+            <FeatureRow
+              icon="●"
+              title="자동 리포트"
+              desc="14일·30일 요약 리포트를 자동으로 생성합니다."
+            />
+            <FeatureRow
+              icon="●"
+              title="안전한 공유"
+              desc="시간 제한 링크로 의료진에게만 공유합니다."
+            />
+            <FeatureRow
+              icon="●"
+              title="서버 저장"
+              desc="데이터는 안전하게 서버에 보관됩니다."
+            />
+          </div>
+        </div>
 
-  if (data.currentDose !== undefined && data.currentDose !== null) {
-    sp.set("currentDose", String(data.currentDose));
-  }
-
-  if (data.currentWeek !== undefined && data.currentWeek !== null) {
-    sp.set("currentWeek", String(data.currentWeek));
-  }
-
-  // startDate는 ""일 수 있어서, 값이 있을 때만
-  if (data.startDate) sp.set("startDate", String(data.startDate));
-  if (data.weekMode) sp.set("weekMode", String(data.weekMode));
-
-  // 기타 입력
-  if (data.budget) sp.set("budget", String(data.budget));
-  if (data.muscleMass) sp.set("muscleMass", String(data.muscleMass));
-  if (data.exercise) sp.set("exercise", String(data.exercise));
-  // form에서는 concern 키를 사용
-  if (data.mainConcern || data.concern) sp.set("mainConcern", String(data.mainConcern ?? data.concern));
-  if (data.resolution) sp.set("resolution", String(data.resolution));
-
-  return sp.toString();
+        {/* 푸터 */}
+        <footer className="mt-12 pt-6 border-t border-gray-100 text-center space-y-2">
+          <p className="text-xs text-slate-400">nextweight.co.kr</p>
+          <div className="flex justify-center gap-4">
+            <Link href="/legal/privacy" className="text-xs text-slate-400 hover:text-slate-600 underline">
+              개인정보처리방침
+            </Link>
+            <Link href="/legal/terms" className="text-xs text-slate-400 hover:text-slate-600 underline">
+              이용약관
+            </Link>
+          </div>
+          <p className="text-xs text-slate-300">
+            이 서비스는 의학적 조언을 제공하지 않습니다.
+          </p>
+        </footer>
+      </main>
+    </div>
+  );
 }
 
-export default function Page() {
-  const router = useRouter();
-
+function FeatureRow({
+  icon,
+  title,
+  desc,
+}: {
+  icon: string;
+  title: string;
+  desc: string;
+}) {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-14 space-y-6 md:space-y-8">
-        <header className="space-y-3">
-          <div className="max-w-xl">
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-              <span className="text-blue-600">Next</span>
-              <span className="text-slate-900">Weight</span>
-              <span className="text-slate-400">Lab.</span>
-            </h1>
-
-            <div className="mt-6 md:mt-8">
-              <p className="text-base sm:text-lg md:text-xl font-semibold text-[#0A1931]">
-                <span className="text-[#3A7CA5]">비싼 다이어트</span>가{" "}
-                <span className="text-[#3A7CA5]">요요</span>로 끝나지 않도록.
-              </p>
-            </div>
-
-            <p className="mt-4 text-sm sm:text-base leading-relaxed text-[#555555]">
-              투약, 식사, 운동을 하나의 시스템으로 연결해
-              <br />
-              근육 자본을 지키는 주간 코칭 리포트를 제공합니다.
-            </p>
-          </div>
-        </header>
-
-        <OnboardingForm
-          onComplete={(data: any) => {
-            try {
-              localStorage.setItem("userData", JSON.stringify(data));
-            } catch {
-              // localStorage 실패는 무시 (페이지 이동은 계속)
-            }
-
-            const qs = toQuery(data);
-            router.push(`/results${qs ? `?${qs}` : ""}`);
-          }}
-        />
+    <div className="flex gap-3">
+      <span className="text-blue-600 mt-0.5 text-xs">{icon}</span>
+      <div>
+        <p className="text-sm font-semibold text-slate-800">{title}</p>
+        <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
       </div>
-    </main>
+    </div>
   );
 }

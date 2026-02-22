@@ -1,11 +1,7 @@
 // app/clinic/page.tsx
-import { Suspense } from 'react';
-import ClinicDashboardClient from './ClinicDashboardClient';
+// Legacy 경로 — /legacy/clinic 으로 리디렉션
+import { redirect } from 'next/navigation';
 
-export default function Page() {
-  return (
-    <Suspense fallback={<div className="p-6">Loading...</div>}>
-      <ClinicDashboardClient />
-    </Suspense>
-  );
+export default function ClinicRedirect() {
+  redirect('/legacy/clinic');
 }
