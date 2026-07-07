@@ -8,15 +8,16 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "NextWeight | 환자 자가관리 플랫폼",
-  description: "GLP-1 치료 중 복약, 오심, 체중을 기록하고 진료 시 안전하게 공유하는 환자 자가관리 플랫폼",
+  title: "NextWeight Korea | Bariatric Surgery Review in Korea",
+  description:
+    "A structured review pathway for international patients comparing bariatric surgery in Korea with long-term GLP-1 treatment.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
 
   return (
-    <html lang="ko">
+    <html lang="en">
       <head>
         {gaId ? (
           <>
