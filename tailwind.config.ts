@@ -8,7 +8,12 @@ export default {
     "./lib/**/*.{js,ts,jsx,tsx,mdx}"
   ],
   theme: {
-    extend: {}
+    extend: {
+      fontFamily: {
+        sans: ["var(--font-geist-sans)", "Arial", "sans-serif"],
+        serif: ["var(--font-serif)", "Georgia", "serif"]
+      }
+    }
   },
   plugins: []
 } satisfies Config;
